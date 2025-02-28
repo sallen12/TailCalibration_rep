@@ -17,7 +17,6 @@ library(pracma)
 ################################################################################
 ## load data
 
-#path <- "C:/Users/sa20i493/Documents/Data/EUMetNet/tp6_station_"
 path <- here::here("data", "tp6_station_")
 load_data <- function(path, na_prop = 0) {
 
@@ -297,7 +296,7 @@ fit_emos_crch <- function(trai, test, dist = "logistic") {
 crps_cgev <- function(y, location, scale, shape, eps = 0.01){
   if (shape >= 1) {
     return(1000)
-  } else if(abs(shape) > eps){
+  } else if (abs(shape) > eps) {
     p0 <- py <- NA*numeric(length(y))
     na_ind <- !is.na(y)
     p0[na_ind] <- pgev(0, loc = location[na_ind], scale = scale[na_ind], shape = shape)
@@ -315,7 +314,7 @@ crps_cgev <- function(y, location, scale, shape, eps = 0.01){
     crps4 <- (scale/shape)*(1 - (p0^2) - (2^shape)*gamma_2)
 
     crps <- crps1 + crps2 - crps3 + crps4
-  }else{
+  } else {
     shape_0 <- shape
 
     shape <- -eps
@@ -382,7 +381,7 @@ fit_emos_cgev <- function(trai, test) {
 }
 
 
-# estimate censored logistic emos parameters at each station
+# estimate censored logistic emos parameters at each station (~2 mins)
 emos_preds_cl <- lapply(seq_along(stat_ids), function(j) {
   st <- stat_ids[j]
   print(paste0('Forecast at Station: ', st, ' (', j, ' from ', length(stat_ids), ')'))
@@ -395,7 +394,7 @@ emos_preds_cl <- simplify2array(emos_preds_cl)
 fc_emos_cl <- list(F_x = F_x, location = t(emos_preds_cl[, 1, ]), scale = t(emos_preds_cl[, 2, ]))
 
 
-# estimate censored GEV emos parameters at each station
+# estimate censored GEV emos parameters at each station (~2 hours)
 emos_preds_cgev <- lapply(seq_along(stat_ids), function(j) {
   st <- stat_ids[j]
   print(paste0('Forecast at Station: ', st, ' (', j, ' from ', length(stat_ids), ')'))
