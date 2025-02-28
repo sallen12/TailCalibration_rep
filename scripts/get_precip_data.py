@@ -16,7 +16,7 @@ import xarray as xr
 import climetlab as cml
 
 # specify which folder to save the data in
-path_save = 'Data\\EUMetNet\\'
+path_save = 'data\\'
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
