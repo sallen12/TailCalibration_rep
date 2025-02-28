@@ -22,6 +22,7 @@ Sourcing the `scripts/sim_study_exp.R` file generates the plots comprising Figur
 
 Sourcing the `scripts/sim_study_norm.R` file generates the plots comprising Figure 1 of the supplementary material.
 
+The example and simulation study scripts all run within ~2 minutes.
 
 ### Case study
 
