@@ -52,7 +52,7 @@ plot_ptc(sev, ratio = "sev", names = c("  S", " 5", "10", "15"), ylims = c(0, 1.
 ggsave("plots/cs_sev_ifs.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- tc_prob(y, dat, t = y_vec, ratio = "occ", lower = 0)
 plot_ptc(occ, ratio = "occ", ylims = c(-0.2, 6), xlab = "t (mm)", title = "")
 ggsave("plots/cs_occ_ifs.png", width = width, height = height)
@@ -83,7 +83,7 @@ plot_ptc(sev, ratio = "sev", names = c("  S", " 5", "10", "15"), ylims = c(0, 1.
 ggsave("plots/cs_sev_smo.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- tc_prob(y, F_x, t = y_vec, ratio = "occ", lower = 0, location = mu, scale = sig)
 plot_ptc(occ, ratio = "occ", names = c("  S", " 5", "10", "15"), ylims = c(-0.2, 6), xlab = "t (mm)", title = "")
 ggsave("plots/cs_occ_smo.png", width = width, height = height)
@@ -114,7 +114,7 @@ plot_ptc(sev, ratio = "sev", names = c("  S", " 5", "10", "15"), ylims = c(0, 1.
 ggsave("plots/cs_sev_pp.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- tc_prob(y, F_x, t = y_vec, ratio = "occ", lower = 0, location = mu, scale = sig)
 plot_ptc(occ, ratio = "occ", names = c("  S", " 5", "10", "15"), ylims = c(-0.2, 6), xlab = "t (mm)", title = "")
 ggsave("plots/cs_occ_pp.png", width = width, height = height)
@@ -145,7 +145,7 @@ plot_ptc(sev, ratio = "sev", names = c("  S", " 5", "10", "15"), ylims = c(0, 1.
 ggsave("plots/cs_sev_ppgev.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- tc_prob(y, F_x, t = y_vec, ratio = "occ", lower = 0, location = mu, scale = sig, shape = shape)
 plot_ptc(occ, ratio = "occ", names = c("  S", " 5", "10", "15"), ylims = c(-0.2, 6), xlab = "t (mm)", title = "")
 ggsave("plots/cs_occ_ppgev.png", width = width, height = height)
@@ -195,7 +195,7 @@ plot_ptc(sev, ratio = "sev", names = q_name, ylims = c(0, 1.1), title = "")
 ggsave("plots/cs_sev_ifs_qu.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- sapply(seq_along(q_vec_oc), function(q) tc_prob(y, dat, t = a_vec_oc[, q], ratio = "occ", lower = 0, var_t = TRUE))
 occ <- data.frame(t = q_vec_oc, rat = occ)
 plot_ptc(occ, ratio = "occ", ylims = c(-0.2, 6), xlab = expression(alpha), title = "")
@@ -222,7 +222,7 @@ plot_ptc(sev, ratio = "sev", names = q_name, ylims = c(0, 1.1), title = "")
 ggsave("plots/cs_sev_smo_qu.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- sapply(seq_along(q_vec_oc), function(q) tc_prob(y, F_x, t = a_vec_oc[, q], ratio = "occ", lower = 0, location = mu, scale = sig, var_t = TRUE))
 occ <- data.frame(t = q_vec_oc, rat = occ)
 plot_ptc(occ, ratio = "occ", ylims = c(-0.2, 6), xlab = expression(alpha), title = "")
@@ -249,7 +249,7 @@ plot_ptc(sev, ratio = "sev", names = q_name, ylims = c(0, 1.1), title = "")
 ggsave("plots/cs_sev_pp_qu.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- sapply(seq_along(q_vec_oc), function(q) tc_prob(y, F_x, t = a_vec_oc[, q], ratio = "occ", lower = 0, location = mu, scale = sig, var_t = TRUE))
 occ <- data.frame(t = q_vec_oc, rat = occ)
 plot_ptc(occ, ratio = "occ", ylims = c(-0.2, 6), xlab = expression(alpha), title = "")
@@ -277,10 +277,279 @@ plot_ptc(sev, ratio = "sev", names = q_name, ylims = c(0, 1.1), title = "")
 ggsave("plots/cs_sev_ppgev_qu.png", width = width, height = height)
 
 
-## occurrence
+## occurrence ratio
 occ <- sapply(seq_along(q_vec_oc), function(q) tc_prob(y, F_x, t = a_vec_oc[, q], ratio = "occ", lower = 0, location = mu, scale = sig, shape = shape, var_t = TRUE))
 occ <- data.frame(t = q_vec_oc, rat = occ)
 plot_ptc(occ, ratio = "occ", ylims = c(-0.2, 6), xlab = expression(alpha), title = "")
 ggsave("plots/cs_occ_ppgev_qu.png", width = width, height = height)
+
+
+
+
+################################################################################
+## normal-based confidence intervals
+
+get_occrat_ci <- function(t, y, F_x, ...) {
+  exc_F <- 1 - F_x(t, ...)
+  exc_y <- y > t
+  Fn <- exc_F |> mean()
+  Fy <- exc_y |> mean()
+  v <- matrix(c(1/Fn, -Fy/(Fn^2)), nrow = 2, ncol = 1)
+  Sig <- cov(cbind(exc_y, exc_F))
+  sig2 <- (t(v) %*% Sig %*% v) / length(y) |> as.vector()
+  return(c(t = t, rat = Fy/Fn, var = sig2))
+}
+
+get_sevrat_ci <- function(t, y, F_x, u = seq(0.01, 0.99, 0.01), ...) {
+  F_t <- F_x(t, ...)
+  Z_F <- (F_x(y, ...) - F_t)/(1 - F_t)
+  Z_F[F_t == 1] <- 1
+  exc_y <- y > t
+  mn_y <- exc_y |> mean()
+  n <- length(y)
+  if (t < 0) {
+    ind <- y == 0
+    Z_F[ind] <- runif(sum(ind), 0, Z_F[ind])
+  }
+  out <- sapply(u, function(u) {
+    exc_u <- (Z_F <= u) & exc_y
+    mn_u <- exc_u |> mean()
+    v <- matrix(c(1/mn_y, -mn_u/(mn_y^2)), nrow = 2, ncol = 1)
+    Sig <- cov(cbind(exc_u, exc_y))
+    sig2 <- (t(v) %*% Sig %*% v) / n |> as.vector()
+    return(c(mean = mn_u/mn_y, var = sig2))
+  })
+  df <- data.frame(u = u, rat = out[1, ], var = out[2, ])
+  return(df)
+}
+
+get_comrat_ci <- function(t, y, F_x, u = seq(0.01, 0.99, 0.01), ...) {
+  F_t <- F_x(t, ...)
+  Z_F <- (F_x(y, ...) - F_t)/(1 - F_t)
+  Z_F[F_t == 1] <- 1
+  exc_F <- 1 - F_x(t, ...)
+  Fn <- exc_F |> mean()
+  exc_y <- y > t
+  n <- length(y)
+  if (t < 0) {
+    ind <- y == 0
+    Z_F[ind] <- runif(sum(ind), 0, Z_F[ind])
+  }
+  out <- sapply(u, function(u) {
+    exc_u <- (Z_F <= u) & exc_y
+    mn_u <- exc_u |> mean()
+    v <- matrix(c(1/Fn, -mn_u/(Fn^2)), nrow = 2, ncol = 1)
+    Sig <- cov(cbind(exc_u, exc_F))
+    sig2 <- (t(v) %*% Sig %*% v) / n |> as.vector()
+    return(c(mean = mn_u/Fn, var = sig2))
+  })
+  df <- data.frame(u = u, rat = out[1, ], var = out[2, ])
+  return(df)
+}
+
+plot_tc_occ_ci <- function(cal, names = NULL, xlab = NULL, ylab = NULL,
+                           xlims = NULL, ylims = NULL, title = NULL, alpha = NULL) {
+
+  if (is.null(xlab)) xlab <- "t"
+  if (is.null(ylab)) ylab <- "Occurrence ratio"
+
+  if (is.data.frame(cal)) {
+    if (!is.null(alpha)) {
+      s <- qnorm((1 + alpha)/2)
+      tc <- ggplot(cal) +
+        geom_ribbon(aes(x = t, ymin = rat - s*sqrt(var), ymax = rat + s*sqrt(var)), fill = "lightgrey", alpha = 0.5) +
+        geom_line(aes(x = t, y = rat))
+    } else {
+      tc <- ggplot(cal) + geom_line(aes(x = t, y = rat))
+    }
+  } else {
+    df <- do.call(rbind, cal)
+    if (!is.null(names)) {
+      df$mth <- rep(names, sapply(cal, nrow))
+    } else {
+      df$mth <- rep(names(cal), sapply(cal, nrow))
+    }
+    if (!is.null(alpha)) {
+      s <- qnorm((1 + alpha)/2)
+      tc <- ggplot(df) +
+        geom_ribbon(aes(x = t, ymin = rat - s*sqrt(var), ymax = rat + s*sqrt(var), col = mth), alpha = 0.3) +
+        geom_line(aes(x = t, y = rat))
+    } else {
+      tc <- ggplot(df) + geom_line(aes(x = t, y = rat, col = mth))
+    }
+  }
+
+  tc <- tc + geom_hline(aes(yintercept = 1), linetype = "dotted") +
+    scale_x_continuous(name = xlab, limits = xlims, expand = c(0, 0)) +
+    scale_y_continuous(name = ylab, limits = ylims, expand = c(0, 0)) +
+    theme_bw() +
+    theme(panel.grid = element_blank(),
+          plot.margin = margin(c(5.5, 10.5, 5.5, 5.5))) +
+    ggtitle(title)
+
+  return(tc)
+}
+
+plot_tc_comsev_ci <- function(cal, names = NULL, xlab = NULL, ylab = NULL,
+                              xlims = NULL, ylims = NULL, title = NULL, alpha = NULL, com = TRUE) {
+
+  if (is.null(xlab)) xlab <- "u"
+  if (is.null(ylab)) if (com) {ylab <- "Combined ratio"} else {ylab = "Severity ratio"}
+  if (is.null(xlims)) xlims <- c(0, 1)
+
+  if (is.data.frame(cal)) {
+    if (!is.null(alpha)) {
+      s <- qnorm((1 + alpha)/2)
+      tc <- ggplot(cal) +
+        geom_ribbon(aes(x = u, ymin = rat - s*sqrt(var), ymax = rat + s*sqrt(var)), alpha = 0.1) +
+        geom_line(aes(x = u, y = rat))
+    } else {
+      tc <- ggplot(cal) + geom_line(aes(x = u, y = rat))
+    }
+  } else {
+    df <- do.call(rbind, cal)
+    if (!is.null(names)) {
+      df$mth <- rep(as.factor(names), sapply(cal, nrow))
+    } else {
+      df$mth <- rep(names(cal), sapply(cal, nrow))
+    }
+    if (!is.null(alpha)) {
+      s <- qnorm((1 + alpha)/2)
+      tc <- ggplot(df) +
+        geom_ribbon(aes(x = u, ymin = rat - s*sqrt(var), ymax = rat + s*sqrt(var), fill = mth), alpha = 0.1) +
+        geom_line(aes(x = u, y = rat, col = mth))
+    } else {
+      tc <- ggplot(df) + geom_line(aes(x = u, y = rat, col = mth))
+    }
+  }
+
+  tc <- tc + geom_abline(aes(intercept = 0, slope = 1), linetype = "dotted") +
+    scale_x_continuous(name = xlab, limits = xlims, expand = c(0, 0)) +
+    scale_y_continuous(name = ylab, limits = ylims, expand = c(0, 0)) +
+    theme_bw() +
+    theme(panel.grid = element_blank(),
+          legend.title = element_blank(),
+          legend.justification = c(0, 1),
+          legend.position = c(0.01, 0.99),
+          plot.margin = margin(c(5.5, 10.5, 5.5, 5.5))) +
+    ggtitle(title)
+
+  return(tc)
+}
+
+
+alpha <- 0.95
+
+
+##### IFS
+
+dat <- fc_dat$ifs$dat
+dat <- matrix(dat, ncol = 51)[!na_ind, ]
+F_x <- function(x, dat) rowMeans(dat <= x)
+
+
+## combined ratio
+cal <- lapply(t_vec, get_comrat_ci, y = y, F_x = F_x, dat = dat)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_comsev_ci(cal, alpha = alpha, ylims = c(-0.01, 2.1), title = "IFS")
+ggsave("plots/cs_com_ifs_ci.png", width = width, height = height)
+
+
+## severity ratio
+cal <- lapply(t_vec, get_sevrat_ci, y = y, F_x = F_x, dat = dat)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_comsev_ci(cal, alpha = alpha, ylims = c(-0.01, 1), title = "", com = F)
+ggsave("plots/cs_sev_ifs_ci.png", width = width, height = height)
+
+
+## occurrence ratio
+cal <- sapply(y_vec, get_occrat_ci, y = y, F_x = F_x, dat = dat) |> t() |> as.data.frame()
+plot_tc_occ_ci(cal, alpha = alpha, ylims = c(-0.2, 7.2), title = "")
+ggsave("plots/cs_occ_ifs_ci.png", width = width, height = height)
+
+
+
+##### smoothed IFS
+
+F_x <- fc_dat$smooth$F_x
+mu <- as.vector(fc_dat$smooth$location)[!na_ind]
+sig <- as.vector(fc_dat$smooth$scale)[!na_ind]
+
+
+## combined ratio
+cal <- lapply(t_vec, get_comrat_ci, y = y, F_x = F_x, location = mu, scale = sig)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_comsev_ci(cal, alpha = alpha, ylims = c(-0.01, 2.1), title = "Smoothed IFS")
+ggsave("plots/cs_com_smo_ci.png", width = width, height = height)
+
+
+## severity ratio
+cal <- lapply(t_vec, get_sevrat_ci, y = y, F_x = F_x, location = mu, scale = sig)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_sev_ci(cal, alpha = alpha, ylims = c(-0.01, 1), title = "")
+ggsave("plots/cs_sev_smo_ci.png", width = width, height = height)
+
+
+## occurrence ratio
+cal <- sapply(y_vec, get_occrat_ci, y = y, F_x = F_x, location = mu, scale = sig) |> t() |> as.data.frame()
+plot_tc_occ_ci(cal, alpha = alpha, ylims = c(-0.2, 7.2), title = "")
+ggsave("plots/cs_occ_smo_ci.png", width = width, height = height)
+
+
+
+##### post-processed (logistic)
+
+F_x <- fc_dat$emos_cl$F_x
+mu <- as.vector(fc_dat$emos_cl$location)[!na_ind]
+sig <- as.vector(fc_dat$emos_cl$scale)[!na_ind]
+
+
+## combined ratio
+cal <- lapply(t_vec, get_comrat_ci, y = y, F_x = F_x, location = mu, scale = sig)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_comsev_ci(cal, alpha = alpha, ylims = c(-0.01, 2.1), title = "Post-processed (Logistic)")
+ggsave("plots/cs_com_pp_ci.png", width = width, height = height)
+
+
+## severity ratio
+cal <- lapply(t_vec, get_sevrat_ci, y = y, F_x = F_x, location = mu, scale = sig)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_sev_ci(cal, alpha = alpha, ylims = c(-0.01, 1), title = "")
+ggsave("plots/cs_sev_pp_ci.png", width = width, height = height)
+
+
+## occurrence ratio
+cal <- sapply(y_vec, get_occrat_ci, y = y, F_x = F_x, location = mu, scale = sig) |> t() |> as.data.frame()
+plot_tc_occ_ci(cal, alpha = alpha, ylims = c(-0.2, 7.2), title = "")
+ggsave("plots/cs_occ_pp_ci.png", width = width, height = height)
+
+
+
+##### post-processed (GEV)
+
+F_x <- fc_dat$emos_cgev$F_x
+mu <- as.vector(fc_dat$emos_cgev$location)[!na_ind]
+sig <- as.vector(fc_dat$emos_cgev$scale)[!na_ind]
+shape <- as.vector(fc_dat$emos_cgev$shape)[!na_ind]
+
+
+## combined ratio
+cal <- lapply(t_vec, get_comrat_ci, y = y, F_x = F_x, location = mu, scale = sig, shape = shape)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_comsev_ci(cal, alpha = alpha, ylims = c(-0.01, 2.1), title = "Post-processed (GEV)")
+ggsave("plots/cs_com_ppgev_ci.png", width = width, height = height)
+
+
+## severity ratio
+cal <- lapply(t_vec, get_sevrat_ci, y = y, F_x = F_x, location = mu, scale = sig, shape = shape)
+names(cal) <- c("  S", " 5", "10", "15")
+plot_tc_sev_ci(cal, alpha = alpha, ylims = c(-0.01, 1), title = "")
+ggsave("plots/cs_sev_ppgev_ci.png", width = width, height = height)
+
+
+## occurrence ratio
+cal <- sapply(y_vec, get_occrat_ci, y = y, F_x = F_x, location = mu, scale = sig, shape = shape) |> t() |> as.data.frame()
+plot_tc_occ_ci(cal, alpha = alpha, ylims = c(-0.2, 7.2), title = "")
+ggsave("plots/cs_occ_ppgev_ci.png", width = width, height = height)
 
 
