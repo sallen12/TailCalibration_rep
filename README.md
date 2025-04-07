@@ -38,5 +38,5 @@ The file `scripts/case_study_data.R` pre-processes the data, trains the statisti
 
 For ease of use, the outputted `data/cs_fc_data.RDS` file is provided in this repository. This file contains a list comprised of the forecast data for the four different forecasting methods compared in the case study (`ifs`, `smooth`, `emos_cl`, `emos_cgev`) and auxiliary data (`aux_data`) such as the observations, station information, and forecast times. The forecasts are either in the form of an ensemble forecast (`dat`), or a forecast distribution function (`F_x`) with additional parameters (e.g. `location`, `scale`, `shape`).
 
-Sourcing the `scripts/case_study_eval.R` file then generates the plots comprising Figure 8 of the main paper, as well as Figure 3 of the supplementary material.
+Sourcing the `scripts/case_study_eval.R` file then generates the plots comprising Figure 8 of the main paper, as well as Figures 3 and 4 of the supplementary material.
 
