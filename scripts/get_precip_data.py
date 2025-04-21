@@ -1,10 +1,10 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 # set up
 
-# The data contains daily ensemble forecasts for 2017 and 2018
-# and 20 years of reforecasts (209 forecasts per year). 
+# The data contains daily ensemble forecasts for 2017 and 2018 (test data),
+# and 20 years of reforecasts (209 forecasts per year; training data). 
 # The 2017-18 data and the reforecasts need to be extracted separately.
-# The forecasts and observations need to be extracted separately. 
+# The forecasts and observations also need to be extracted separately. 
 # For station data, data for each country needs to be extracted separately.
 
 # For more details:
