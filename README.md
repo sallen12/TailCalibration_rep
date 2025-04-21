@@ -34,7 +34,7 @@ The data employed in the case study (Section 5 of the paper) is publicly availab
 
 Further details about the case study data can be found [here](https://github.com/EUPP-benchmark/climetlab-eumetnet-postprocessing-benchmark). Downloading these four files takes ~30 minutes on a standard (Intel Core i7) CPU. 
 
-The file `scripts/case_study_data.R` pre-processes the data, trains the statistical post-processing models that are compared, and saves the forecasts for the different methods in the file `data/cs_fc_data.RDS`. This pre-processing step takes ~5 minutes, except for the GEV post-processing method, which, without any parallelisation, takes ~2 hours. 
+The file `scripts/case_study_data.R` pre-processes the data, trains the statistical post-processing models that are compared, and saves the forecasts for the different methods in the file `data/cs_fc_data.RDS`. This pre-processing step takes ~5 minutes, except for the GEV post-processing method, which, without any parallelisation, takes ~2 hours. This file sources `scripts/case_study_data_utils.R`, which contains utility functions to load, plot, and post-process the raw data.
 
 For ease of use, the outputted `data/cs_fc_data.RDS` file is provided in this repository. This file contains a list comprised of the forecast data for the four different forecasting methods compared in the case study (`ifs`, `smooth`, `emos_cl`, `emos_cgev`) and auxiliary data (`aux_data`) such as the observations, station information, and forecast times. The forecasts are either in the form of an ensemble forecast (`dat`), or a forecast distribution function (`F_x`) with additional parameters (e.g. `location`, `scale`, `shape`).
 
