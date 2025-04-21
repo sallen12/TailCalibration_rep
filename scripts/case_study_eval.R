@@ -21,9 +21,9 @@ na_ind <- is.na(y)
 y <- y[!na_ind]
 
 
-# specify thresholds at which to evaluate tail calibration
-y_vec <- seq(0, 20, 0.1)
-t_vec <- c(-Inf, 5, 10, 15)
+# thresholds at which to evaluate tail calibration
+y_vec <- seq(0, 20, 0.1)      # thresholds for occurrence ratio diagnostic plots
+t_vec <- c(-Inf, 5, 10, 15)   # thresholds for combined and severity ratio diagnostic plots
 
 
 # specify plot dimensions
@@ -37,8 +37,10 @@ height <- 3.4
 
 ##### IFS
 
+# extract IFS ensemble data and remove forecasts made for missing observations
 dat <- fc_dat$ifs$dat
 dat <- matrix(dat, ncol = 51)[!na_ind, ]
+
 
 ## combined ratio
 com <- tc_prob(y, dat, t = t_vec, lower = 0)
@@ -59,16 +61,21 @@ ggsave("plots/cs_occ_ifs.png", width = width, height = height)
 
 
 ## testing
+
+# Kolmogorov-Smirnov test for uniformity of (excess) PIT values
 sev <- tc_prob(y, dat, t = t_vec, ratio = "sev", lower = 0, test = TRUE)
+
+# Binomial test for equality of forecast and observed exceedance probabilities
 occ <- tc_prob(y, dat, t = t_vec, ratio = "occ", lower = 0, test = TRUE)
 
 
 
 ##### smoothed IFS
 
-F_x <- fc_dat$smooth$F_x
-mu <- as.vector(fc_dat$smooth$location)[!na_ind]
-sig <- as.vector(fc_dat$smooth$scale)[!na_ind]
+# extract the smoothed IFS forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$smooth$F_x                                    # cdf
+mu <- as.vector(fc_dat$smooth$location)[!na_ind]            # location parameters
+sig <- as.vector(fc_dat$smooth$scale)[!na_ind]              # scale parameters
 
 
 ## combined ratio
@@ -90,16 +97,21 @@ ggsave("plots/cs_occ_smo.png", width = width, height = height)
 
 
 ## testing
+
+# Kolmogorov-Smirnov test for uniformity of (excess) PIT values
 sev <- tc_prob(y, F_x, t = t_vec, lower = 0, ratio = "sev", test = TRUE, location = mu, scale = sig)
+
+# Binomial test for equality of forecast and observed exceedance probabilities
 occ <- tc_prob(y, F_x, t = t_vec, ratio = "occ", lower = 0, test = TRUE, location = mu, scale = sig)
 
 
 
 ##### post-processed (logistic)
 
-F_x <- fc_dat$emos_cl$F_x
-mu <- as.vector(fc_dat$emos_cl$location)[!na_ind]
-sig <- as.vector(fc_dat$emos_cl$scale)[!na_ind]
+# extract the censored logistic post-processed forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$emos_cl$F_x                                   # cdf
+mu <- as.vector(fc_dat$emos_cl$location)[!na_ind]           # location parameters
+sig <- as.vector(fc_dat$emos_cl$scale)[!na_ind]             # scale parameters
 
 
 ## combined ratio
@@ -121,16 +133,21 @@ ggsave("plots/cs_occ_pp.png", width = width, height = height)
 
 
 ## testing
+
+# Kolmogorov-Smirnov test for uniformity of (excess) PIT values
 sev <- tc_prob(y, F_x, t = t_vec, lower = 0, ratio = "sev", test = TRUE, location = mu, scale = sig)
+
+# Binomial test for equality of forecast and observed exceedance probabilities
 occ <- tc_prob(y, F_x, t = t_vec, ratio = "occ", lower = 0, test = TRUE, location = mu, scale = sig)
 
 
 ##### post-processed (GEV)
 
-F_x <- fc_dat$emos_cgev$F_x
-mu <- as.vector(fc_dat$emos_cgev$location)[!na_ind]
-sig <- as.vector(fc_dat$emos_cgev$scale)[!na_ind]
-shape <- as.vector(fc_dat$emos_cgev$shape)[!na_ind]
+# extract the censored GEV post-processed forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$emos_cgev$F_x                                 # cdf
+mu <- as.vector(fc_dat$emos_cgev$location)[!na_ind]         # location parameters
+sig <- as.vector(fc_dat$emos_cgev$scale)[!na_ind]           # scale parameters
+shape <- as.vector(fc_dat$emos_cgev$shape)[!na_ind]         # shape parameters
 
 
 ## combined ratio
@@ -152,33 +169,42 @@ ggsave("plots/cs_occ_ppgev.png", width = width, height = height)
 
 
 ## testing
+
+# Kolmogorov-Smirnov test for uniformity of (excess) PIT values
 sev <- tc_prob(y, F_x, t = t_vec, lower = 0, ratio = "sev", test = TRUE, location = mu, scale = sig, shape = shape)
+
+# Binomial test for equality of forecast and observed exceedance probabilities
 occ <- tc_prob(y, F_x, t = t_vec, ratio = "occ", lower = 0, test = TRUE, location = mu, scale = sig, shape = shape)
+
 
 
 
 ################################################################################
 ## evaluation using quantile-based thresholds
 
-q_vec <- c(0.97, 0.99, 0.995)
-q_vec_oc <- seq(0.7, 0.999, 0.001)
-q_name <- c(" S", as.character(q_vec))
+# quantile thresholds at which to evaluate tail calibration
+q_vec <- c(0.97, 0.99, 0.995)             # thresholds for occurrence ratio diagnostic plots
+q_vec_oc <- seq(0.7, 0.999, 0.001)        # thresholds for combined and severity ratio diagnostic plots
 
+# calculate the quantiles of the observations at each quantile threshold
 y <- fc_dat$aux_data$obs
 a_vec <- sapply(q_vec, function(q) apply(y, 1, quantile, q, na.rm=T) |> rep(ncol(y)))
 a_vec_oc <- sapply(q_vec_oc, function(q) apply(y, 1, quantile, q, na.rm=T) |> rep(ncol(y)))
 
+# remove missing observations
 y <- y[!na_ind]
 a_vec <- a_vec[!na_ind, ]
 a_vec_oc <- a_vec_oc[!na_ind, ]
 
+# add the threshold -Inf, which corresponds to standard (S) probabilistic calibration
 a_vec <- cbind(-Inf, a_vec)
 q_vec <- c(0, q_vec)
-
+q_name <- c(" S", as.character(q_vec))
 
 
 ##### IFS
 
+# extract IFS ensemble data and remove forecasts made for missing observations
 dat <- fc_dat$ifs$dat
 dat <- matrix(dat, ncol = 51)[!na_ind, ]
 
@@ -205,9 +231,10 @@ ggsave("plots/cs_occ_ifs_qu.png", width = width, height = height)
 
 ##### smoothed IFS
 
-F_x <- fc_dat$smooth$F_x
-mu <- as.vector(fc_dat$smooth$location)[!na_ind]
-sig <- as.vector(fc_dat$smooth$scale)[!na_ind]
+# extract the smoothed IFS forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$smooth$F_x                                    # cdf
+mu <- as.vector(fc_dat$smooth$location)[!na_ind]            # location parameters
+sig <- as.vector(fc_dat$smooth$scale)[!na_ind]              # scale parameters
 
 
 ## combined ratio
@@ -232,9 +259,10 @@ ggsave("plots/cs_occ_smo_qu.png", width = width, height = height)
 
 ##### post-processed (logistic)
 
-F_x <- fc_dat$emos_cl$F_x
-mu <- as.vector(fc_dat$emos_cl$location)[!na_ind]
-sig <- as.vector(fc_dat$emos_cl$scale)[!na_ind]
+# extract the censored logistic post-processed forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$emos_cl$F_x                                   # cdf
+mu <- as.vector(fc_dat$emos_cl$location)[!na_ind]           # location parameters
+sig <- as.vector(fc_dat$emos_cl$scale)[!na_ind]             # scale parameters
 
 
 ## combined ratio
@@ -259,10 +287,11 @@ ggsave("plots/cs_occ_pp_qu.png", width = width, height = height)
 
 ##### post-processed (GEV)
 
-F_x <- fc_dat$emos_cgev$F_x
-mu <- as.vector(fc_dat$emos_cgev$location)[!na_ind]
-sig <- as.vector(fc_dat$emos_cgev$scale)[!na_ind]
-shape <- as.vector(fc_dat$emos_cgev$shape)[!na_ind]
+# extract the censored GEV post-processed forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$emos_cgev$F_x                                 # cdf
+mu <- as.vector(fc_dat$emos_cgev$location)[!na_ind]         # location parameters
+sig <- as.vector(fc_dat$emos_cgev$scale)[!na_ind]           # scale parameters
+shape <- as.vector(fc_dat$emos_cgev$shape)[!na_ind]         # shape parameters
 
 
 ## combined ratio
@@ -289,6 +318,7 @@ ggsave("plots/cs_occ_ppgev_qu.png", width = width, height = height)
 ################################################################################
 ## normal-based confidence intervals
 
+# function to get confidence intervals for the occurrence ratio
 get_occrat_ci <- function(t, y, F_x, ...) {
   exc_F <- 1 - F_x(t, ...)
   exc_y <- y > t
@@ -300,6 +330,7 @@ get_occrat_ci <- function(t, y, F_x, ...) {
   return(c(t = t, rat = Fy/Fn, var = sig2))
 }
 
+# function to get confidence intervals for the severity ratio
 get_sevrat_ci <- function(t, y, F_x, u = seq(0.01, 0.99, 0.01), ...) {
   F_t <- F_x(t, ...)
   Z_F <- (F_x(y, ...) - F_t)/(1 - F_t)
@@ -323,6 +354,7 @@ get_sevrat_ci <- function(t, y, F_x, u = seq(0.01, 0.99, 0.01), ...) {
   return(df)
 }
 
+# function to get confidence intervals for the combined ratio
 get_comrat_ci <- function(t, y, F_x, u = seq(0.01, 0.99, 0.01), ...) {
   F_t <- F_x(t, ...)
   Z_F <- (F_x(y, ...) - F_t)/(1 - F_t)
@@ -347,6 +379,7 @@ get_comrat_ci <- function(t, y, F_x, u = seq(0.01, 0.99, 0.01), ...) {
   return(df)
 }
 
+# function to plot the occurrence ratio with confidence intervals
 plot_tc_occ_ci <- function(cal, names = NULL, xlab = NULL, ylab = NULL,
                            xlims = NULL, ylims = NULL, title = NULL, alpha = NULL) {
 
@@ -390,6 +423,7 @@ plot_tc_occ_ci <- function(cal, names = NULL, xlab = NULL, ylab = NULL,
   return(tc)
 }
 
+# function to plot the combined and severity ratios with confidence intervals
 plot_tc_comsev_ci <- function(cal, names = NULL, xlab = NULL, ylab = NULL,
                               xlims = NULL, ylims = NULL, title = NULL, alpha = NULL, com = TRUE) {
 
@@ -437,12 +471,13 @@ plot_tc_comsev_ci <- function(cal, names = NULL, xlab = NULL, ylab = NULL,
   return(tc)
 }
 
-
+# confidence interval level
 alpha <- 0.95
 
 
 ##### IFS
 
+# extract IFS ensemble data and remove forecasts made for missing observations
 dat <- fc_dat$ifs$dat
 dat <- matrix(dat, ncol = 51)[!na_ind, ]
 F_x <- function(x, dat) rowMeans(dat <= x)
@@ -471,9 +506,10 @@ ggsave("plots/cs_occ_ifs_ci.png", width = width, height = height)
 
 ##### smoothed IFS
 
-F_x <- fc_dat$smooth$F_x
-mu <- as.vector(fc_dat$smooth$location)[!na_ind]
-sig <- as.vector(fc_dat$smooth$scale)[!na_ind]
+# extract the smoothed IFS forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$smooth$F_x                                    # cdf
+mu <- as.vector(fc_dat$smooth$location)[!na_ind]            # location parameters
+sig <- as.vector(fc_dat$smooth$scale)[!na_ind]              # scale parameters
 
 
 ## combined ratio
@@ -499,9 +535,10 @@ ggsave("plots/cs_occ_smo_ci.png", width = width, height = height)
 
 ##### post-processed (logistic)
 
-F_x <- fc_dat$emos_cl$F_x
-mu <- as.vector(fc_dat$emos_cl$location)[!na_ind]
-sig <- as.vector(fc_dat$emos_cl$scale)[!na_ind]
+# extract the censored logistic post-processed forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$emos_cl$F_x                                   # cdf
+mu <- as.vector(fc_dat$emos_cl$location)[!na_ind]           # location parameters
+sig <- as.vector(fc_dat$emos_cl$scale)[!na_ind]             # scale parameters
 
 
 ## combined ratio
@@ -527,10 +564,11 @@ ggsave("plots/cs_occ_pp_ci.png", width = width, height = height)
 
 ##### post-processed (GEV)
 
-F_x <- fc_dat$emos_cgev$F_x
-mu <- as.vector(fc_dat$emos_cgev$location)[!na_ind]
-sig <- as.vector(fc_dat$emos_cgev$scale)[!na_ind]
-shape <- as.vector(fc_dat$emos_cgev$shape)[!na_ind]
+# extract the censored GEV post-processed forecast distribution, and remove forecasts made for missing observations
+F_x <- fc_dat$emos_cgev$F_x                                 # cdf
+mu <- as.vector(fc_dat$emos_cgev$location)[!na_ind]         # location parameters
+sig <- as.vector(fc_dat$emos_cgev$scale)[!na_ind]           # scale parameters
+shape <- as.vector(fc_dat$emos_cgev$shape)[!na_ind]         # shape parameters
 
 
 ## combined ratio
